@@ -10,6 +10,7 @@ from llama_index.vector_stores.chroma.base import ChromaVectorStore
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 from db_manager import DatabaseManager
+import unicodedata
 
 load_dotenv()
 
@@ -29,7 +30,7 @@ class PDFProcessor:
         )
         
         # Create or get the collection
-        self.embeddings_collection = chroma_client.get_or_create_collection("pdf_embeddings")
+        self.embeddings_collection = chroma_client.get_or_create_collection("embeddings")
         
         # Create vector store
         self.vector_store = ChromaVectorStore(chroma_collection=self.embeddings_collection)
@@ -83,8 +84,8 @@ class PDFProcessor:
         print(f"Processed {local_path} successfully")
         return True
         
-    def get_similar_chunks(self, query: str, top_k: int = 3) -> List[str]:
-        """Retrieve similar chunks based on a query without generating response."""
+    def get_similar_chunks(self, query: str, top_k: int = 3) -> List:
+        """Retrieve similar chunks based on a query and return their text content."""
         index = VectorStoreIndex.from_vector_store(
             self.vector_store,
             storage_context=self.storage_context,
@@ -94,11 +95,15 @@ class PDFProcessor:
         retriever = index.as_retriever(similarity_top_k=top_k)
         source_nodes = retriever.retrieve(query)
         
-        return source_nodes
+        # Extract text content from the source nodes and normalize Unicode characters
+        chunk_texts = [unicodedata.normalize('NFKC', node.text) for node in source_nodes]
+        
+        return chunk_texts
 
 if __name__ == "__main__":
     # Example usage
     processor = PDFProcessor()
+    print(processor.get_similar_chunks("What is Bakra Beverage"))
     # Process a single PDF
     # processor.process_pdf("path/to/your/pdf")
     # Process a directory of PDFs
