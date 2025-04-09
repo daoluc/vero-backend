@@ -1,16 +1,14 @@
 import os
 from typing import List
-from pathlib import Path
 from dotenv import load_dotenv
-from llama_index import (
+from llama_index.core import (
     VectorStoreIndex,
     SimpleDirectoryReader,
-    ServiceContext,
     StorageContext,
 )
-from llama_index.vector_stores import ChromaVectorStore
+from llama_index.vector_stores.chroma.base import ChromaVectorStore
 import chromadb
-from chromadb.config import Settings
+from chromadb.config import Settings as ChromaSettings
 from db_manager import DatabaseManager
 
 load_dotenv()
@@ -27,7 +25,7 @@ class PDFProcessor:
         # Initialize Chroma client
         chroma_client = chromadb.PersistentClient(
             path=self.persist_directory,
-            settings=Settings(anonymized_telemetry=False)
+            settings=ChromaSettings(anonymized_telemetry=False)
         )
         
         # Create or get the collection
@@ -40,9 +38,6 @@ class PDFProcessor:
         self.storage_context = StorageContext.from_defaults(
             vector_store=self.vector_store
         )
-        
-        # Create service context
-        self.service_context = ServiceContext.from_defaults()
     
     def process_pdf(self, local_path: str, folder_id: str) -> bool:
         """
@@ -80,7 +75,6 @@ class PDFProcessor:
         index = VectorStoreIndex.from_documents(
             documents,
             storage_context=self.storage_context,
-            service_context=self.service_context
         )
         
         # Mark file as processed in the database
@@ -93,7 +87,7 @@ class PDFProcessor:
         """Retrieve similar chunks based on a query without generating response."""
         index = VectorStoreIndex.from_vector_store(
             self.vector_store,
-            service_context=self.service_context
+            storage_context=self.storage_context,
         )
         
         # Use retriever instead of query engine

@@ -1,12 +1,9 @@
 import os
 from dotenv import load_dotenv
-from llama_index import (
-    VectorStoreIndex,
-    ServiceContext,
-)
-from llama_index.vector_stores import ChromaVectorStore
+from llama_index.core import VectorStoreIndex, StorageContext
+from llama_index.vector_stores.chroma import ChromaVectorStore
 import chromadb
-from chromadb.config import Settings
+from chromadb.config import Settings as ChromaSettings
 
 load_dotenv()
 
@@ -22,7 +19,7 @@ def query_chroma_db(persist_directory: str = "chroma_db", query_text: str = None
     # Initialize Chroma client
     chroma_client = chromadb.PersistentClient(
         path=persist_directory,
-        settings=Settings(anonymized_telemetry=False)
+        settings=ChromaSettings(anonymized_telemetry=False)
     )
     
     # Get the embeddings collection
@@ -31,13 +28,13 @@ def query_chroma_db(persist_directory: str = "chroma_db", query_text: str = None
     # Create vector store
     vector_store = ChromaVectorStore(chroma_collection=embeddings_collection)
     
-    # Create service context
-    service_context = ServiceContext.from_defaults()
+    # Create storage context
+    storage_context = StorageContext.from_defaults(vector_store=vector_store)
     
     # Create index from vector store
     index = VectorStoreIndex.from_vector_store(
         vector_store,
-        service_context=service_context
+        storage_context=storage_context
     )
     
     # Create query engine
