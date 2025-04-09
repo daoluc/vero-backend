@@ -76,7 +76,7 @@ class GoogleDriveLoader:
                     # Download the file
                     local_path = self.download_file(pdf['id'], output_path)
                     # Process the file
-                    was_processed = file_processor(local_path, folder_id)
+                    was_processed = file_processor(local_path, f'https://drive.google.com/file/d/{pdf["id"]}/view')
                     if was_processed:
                         processed_count += 1
                     else:

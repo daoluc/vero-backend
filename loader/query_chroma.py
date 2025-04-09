@@ -56,8 +56,7 @@ def query_chroma_db(persist_directory: str = "chroma_db", query_text: str = None
     for i, node in enumerate(response.source_nodes):
         print(f"\nChunk {i+1}:")
         print(f"Score: {node.score}")
-        print(f"File: {node.metadata.get('file_name', 'Unknown')}")
-        print(f"Path: {node.metadata.get('file_path', 'Unknown')}")
+        print(f"Source: {node.metadata.get('source', 'Unknown')}")
         print(f"Content: {node.text}...")  # Print first 200 chars of content
 
 if __name__ == "__main__":

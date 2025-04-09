@@ -40,7 +40,7 @@ class PDFProcessor:
             vector_store=self.vector_store
         )
     
-    def process_pdf(self, local_path: str, folder_id: str) -> bool:
+    def process_pdf(self, local_path: str, source: str) -> bool:
         """
         Process a single PDF file and store its embeddings.
         Returns True if the file was processed, False if it was skipped due to duplication.
@@ -69,8 +69,9 @@ class PDFProcessor:
         
         # Add file information to each document's metadata
         for doc in documents:
-            doc.metadata["folder_id"] = folder_id
+            doc.metadata["source"] = source
             doc.metadata["file_name"] = file_name
+            doc.metadata["content_hash"] = content_hash
         
         # Create index and store embeddings
         index = VectorStoreIndex.from_documents(
@@ -79,7 +80,7 @@ class PDFProcessor:
         )
         
         # Mark file as processed in the database
-        self.db_manager.mark_file_processed(local_path, folder_id, content_hash)
+        self.db_manager.mark_file_processed(file_name, source, content_hash)
         
         print(f"Processed {local_path} successfully")
         return True
