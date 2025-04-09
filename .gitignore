@@ -1,5 +1,5 @@
 # Python virtual environment
-venv/
+.venv/
 env/
 ENV/
 
@@ -29,9 +29,10 @@ token.pickle
 *.log 
 
 # project specific files
+/chroma_db
 *.sqlite3
+*.db
 *.pdf
-*.txt
 *.docx
 *.doc
 *.xls

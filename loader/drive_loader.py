@@ -51,10 +51,21 @@ class GoogleDriveLoader:
             
         return output_path
     
-    def process_folder(self, folder_id: str, output_dir: str, file_processor: Callable[[str], None]) -> None:
-        """Download files from a folder, process them using the provided processor, and clean up."""
+    def process_folder(self, folder_id: str, output_dir: str, file_processor: Callable[[str, str], bool]) -> None:
+        """
+        Download files from a folder, process them using the provided processor, and clean up.
+        
+        Args:
+            folder_id: The Google Drive folder ID
+            output_dir: Directory to temporarily store downloaded files
+            file_processor: A function that takes (local_path, folder_id) and returns a boolean
+                           indicating whether the file was processed (True) or skipped (False)
+        """
         # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
+        
+        processed_count = 0
+        skipped_count = 0
         
         try:
             # Get list of PDFs
@@ -67,11 +78,17 @@ class GoogleDriveLoader:
                     # Download the file
                     local_path = self.download_file(pdf['id'], output_path)
                     # Process the file
-                    file_processor(local_path, folder_id)
+                    was_processed = file_processor(local_path, folder_id)
+                    if was_processed:
+                        processed_count += 1
+                    else:
+                        skipped_count += 1
                 finally:
                     # Always delete the file after processing, even if processing fails
                     if os.path.exists(output_path):
                         os.remove(output_path)
+            
+            print(f"Processing complete: {processed_count} files processed, {skipped_count} files skipped")
                 
         finally:
             # Clean up the output directory
