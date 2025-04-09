@@ -1,0 +1,11 @@
+# Remove the old image
+docker rmi vero-api
+
+# Build the new image
+docker build -t vero-api .
+
+# Run the container
+docker run -p 8000:8000 vero-api
+
+# Check docker lib version
+docker exec -it serene_bell pip show llama-index

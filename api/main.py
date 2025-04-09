@@ -33,7 +33,7 @@ class SearchQuery(BaseModel):
 class Chunk(BaseModel):
     text: str
     source: str
-
+    file_name: str
 class SearchResponse(BaseModel):
     results: List[Chunk]
 
@@ -59,7 +59,12 @@ async def internal_search(search_query: SearchQuery):
         source_nodes = retriever.retrieve(search_query.query)
         
         # Extract text content from the source nodes and normalize Unicode characters
-        results = [{'text': unicodedata.normalize('NFKC', node.text), 'source': node.metadata.get('source', 'Unknown')} for node in source_nodes]
+        results = [
+            {
+                'text': unicodedata.normalize('NFKC', node.text), 
+                'source': node.metadata.get('source', 'Unknown'), 
+                'file_name': node.metadata.get('file_name', 'Unknown')
+            } for node in source_nodes]        
         
         return SearchResponse(results=results)
     except Exception as e:
