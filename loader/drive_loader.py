@@ -67,7 +67,7 @@ class GoogleDriveLoader:
                     # Download the file
                     local_path = self.download_file(pdf['id'], output_path)
                     # Process the file
-                    file_processor(local_path)
+                    file_processor(local_path, folder_id)
                 finally:
                     # Always delete the file after processing, even if processing fails
                     if os.path.exists(output_path):

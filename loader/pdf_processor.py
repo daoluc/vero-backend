@@ -1,6 +1,5 @@
 import os
-import hashlib
-from typing import List, Optional, Dict, Any
+from typing import List
 from pathlib import Path
 from dotenv import load_dotenv
 from llama_index import (
@@ -29,9 +28,8 @@ class PDFProcessor:
             settings=Settings(anonymized_telemetry=False)
         )
         
-        # Create or get the collections
+        # Create or get the collection
         self.embeddings_collection = chroma_client.get_or_create_collection("pdf_embeddings")
-        self.metadata_collection = chroma_client.get_or_create_collection("pdf_metadata")
         
         # Create vector store
         self.vector_store = ChromaVectorStore(chroma_collection=self.embeddings_collection)
@@ -43,109 +41,27 @@ class PDFProcessor:
         
         # Create service context
         self.service_context = ServiceContext.from_defaults()
-        
-    def _calculate_file_hash(self, file_path: str) -> str:
-        """Calculate SHA-256 hash of a file."""
-        sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            # Read the file in chunks to handle large files
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
-        return sha256_hash.hexdigest()
     
-    def _get_file_metadata(self, file_path: str) -> Dict[str, Any]:
-        """Get metadata for a file."""
-        file_name = os.path.basename(file_path)
-        file_hash = self._calculate_file_hash(file_path)
-        
-        return {
-            "file_path": file_path,
-            "file_name": file_name,
-            "content_hash": file_hash
-        }
-    
-    def _check_duplicate(self, metadata: Dict[str, Any]) -> Optional[str]:
-        """Check if a file with the same metadata exists and return its ID if found."""
-        # Query the metadata collection for the file path
-        results = self.metadata_collection.get(
-            where={"file_path": metadata["file_path"]},
-            include=["metadatas", "ids"]
-        )
-        
-        if results and results["ids"]:
-            return results["ids"][0]
-        return None
-    
-    def _store_metadata(self, metadata: Dict[str, Any]) -> str:
-        """Store file metadata and return the ID."""
-        # Generate a unique ID for the metadata
-        metadata_id = f"meta_{metadata['content_hash']}"
-        
-        # Store the metadata
-        self.metadata_collection.add(
-            ids=[metadata_id],
-            metadatas=[metadata]
-        )
-        
-        return metadata_id
-    
-    def _delete_old_embeddings(self, metadata_id: str) -> None:
-        """Delete embeddings associated with the old version of a file."""
-        # Get the metadata to find the content hash
-        results = self.metadata_collection.get(
-            ids=[metadata_id],
-            include=["metadatas"]
-        )
-        
-        if results and results["metadatas"]:
-            old_hash = results["metadatas"][0]["content_hash"]
+    def process_pdf(self, local_path: str, folder_id: str) -> None:
+        """Process a single PDF file and store its embeddings."""
+        if not os.path.exists(local_path):
+            raise FileNotFoundError(f"PDF file not found: {local_path}")
             
-            # Delete embeddings with the old hash
-            self.embeddings_collection.delete(
-                where={"content_hash": old_hash}
-            )
-    
-    def process_pdf(self, pdf_path: str) -> None:
-        """Process a single PDF file and store its embeddings with deduplication."""
-        if not os.path.exists(pdf_path):
-            raise FileNotFoundError(f"PDF file not found: {pdf_path}")
-            
-        if not pdf_path.lower().endswith('.pdf'):
-            raise ValueError(f"File is not a PDF: {pdf_path}")
+        if not local_path.lower().endswith('.pdf'):
+            raise ValueError(f"File is not a PDF: {local_path}")
         
-        # Get file metadata
-        metadata = self._get_file_metadata(pdf_path)
-        
-        # Check for duplicates
-        existing_id = self._check_duplicate(metadata)
-        
-        if existing_id:
-            # Get the existing metadata to compare content hashes
-            existing_metadata = self.metadata_collection.get(
-                ids=[existing_id],
-                include=["metadatas"]
-            )
-            
-            if existing_metadata and existing_metadata["metadatas"]:
-                existing_hash = existing_metadata["metadatas"][0]["content_hash"]
-                
-                # If content hash is the same, the file is identical - skip processing
-                if existing_hash == metadata["content_hash"]:
-                    print(f"Skipping {pdf_path} - identical content already processed")
-                    return
-                
-                # If content hash is different, delete old embeddings
-                print(f"Content changed for {pdf_path} - reprocessing")
-                self._delete_old_embeddings(existing_id)
+        # Get file information
+        file_name = os.path.basename(local_path)
         
         # Load the PDF
         documents = SimpleDirectoryReader(
-            input_files=[pdf_path]
+            input_files=[local_path]
         ).load_data()
         
-        # Add content hash to each document's metadata
+        # Add file information to each document's metadata
         for doc in documents:
-            doc.metadata["content_hash"] = metadata["content_hash"]
+            doc.metadata["folder_id"] = folder_id
+            doc.metadata["file_name"] = file_name
         
         # Create index and store embeddings
         index = VectorStoreIndex.from_documents(
@@ -154,10 +70,7 @@ class PDFProcessor:
             service_context=self.service_context
         )
         
-        # Store the metadata
-        self._store_metadata(metadata)
-        
-        print(f"Processed {pdf_path} successfully")
+        print(f"Processed {local_path} successfully")
         
     def get_similar_chunks(self, query: str, top_k: int = 3) -> List[str]:
         """Retrieve similar chunks based on a query."""
