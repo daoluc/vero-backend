@@ -30,6 +30,7 @@ token.pickle
 
 # project specific files
 /chroma_db
+vero-ec2.pem
 *.sqlite3
 *.db
 *.pdf

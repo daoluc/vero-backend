@@ -10,3 +10,8 @@ docker run -p 8000:8000 vero-backend
 
 # Check docker lib version
 docker exec -it serene_bell pip show llama-index
+
+chmod 400 vero-ec2.pem
+rsync -avz -e "ssh -i vero-ec2.pem" --exclude-from=.dockerignore ./ ec2-user@ec2-3-142-140-162.us-east-2.compute.amazonaws.com:/home/ec2-user/vero-backend
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+http://3.142.140.162:8000

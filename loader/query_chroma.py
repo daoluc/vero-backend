@@ -23,7 +23,14 @@ def query_chroma_db(persist_directory: str = "chroma_db", query_text: str = None
     )
     
     # Get the embeddings collection
-    embeddings_collection = chroma_client.get_or_create_collection("embeddings")
+    embeddings_collection = chroma_client.get_or_create_collection(
+        "embeddings",
+        configuration={
+            "hnsw": {
+                "num_threads": 2
+            }
+        }
+    )
     
     # Create vector store
     vector_store = ChromaVectorStore(chroma_collection=embeddings_collection)

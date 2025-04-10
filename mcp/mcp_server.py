@@ -4,7 +4,6 @@ from chromadb.config import Settings
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core import StorageContext, VectorStoreIndex
 from typing import List, Dict, Any
-import os
 from dotenv import load_dotenv
 import unicodedata
 
@@ -19,7 +18,14 @@ chroma_client = chromadb.Client(Settings(
     persist_directory="chroma_db",
     is_persistent=True
 ))
-embeddings_collection = chroma_client.get_or_create_collection("embeddings")
+embeddings_collection = chroma_client.get_or_create_collection(
+    "embeddings",
+    configuration={
+        "hnsw": {
+            "num_threads": 2
+        }
+    }
+)
 vector_store = ChromaVectorStore(chroma_collection=embeddings_collection)
 storage_context = StorageContext.from_defaults(vector_store=vector_store)
 

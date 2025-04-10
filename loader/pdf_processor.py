@@ -30,7 +30,14 @@ class PDFProcessor:
         )
         
         # Create or get the collection
-        self.embeddings_collection = chroma_client.get_or_create_collection("embeddings")
+        self.embeddings_collection = chroma_client.get_or_create_collection(
+            "embeddings",
+            configuration={
+                "hnsw": {
+                    "num_threads": 2
+                }
+            }
+        )
         
         # Create vector store
         self.vector_store = ChromaVectorStore(chroma_collection=self.embeddings_collection)
