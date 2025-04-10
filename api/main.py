@@ -76,7 +76,12 @@ async def internal_search(search_query: SearchQuery):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy"}
+    return {"status": "ok"}
+
+@app.get("/")
+async def read_root():
+    """Health check endpoint"""
+    return {"status": "ok"}
 
 #uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 #http://localhost:8000/docs
