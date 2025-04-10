@@ -1,11 +1,12 @@
 # Remove the old image
-docker rmi vero-api
+docker rmi vero-backend
 
 # Build the new image
-docker build -t vero-api .
+docker build -t vero-backend .
+docker buildx build --platform linux/amd64 -t vero-backend .
 
 # Run the container
-docker run -p 8000:8000 vero-api
+docker run -p 8000:8000 vero-backend
 
 # Check docker lib version
 docker exec -it serene_bell pip show llama-index
